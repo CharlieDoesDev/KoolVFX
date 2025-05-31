@@ -111,16 +111,18 @@ vfxArray.push((mesh, scene, time) => {
   mesh.scale.setScalar(1 + 0.2 * Math.sin(time * 2));
 });
 
-// VFX: Make particles orbit the cube
+// VFX: Make particles jitter on the cube surface
+const originalPositions = positions.slice(); // Save initial surface positions
 vfxArray.push((mesh, scene, time) => {
   const pos = particleGeometry.getAttribute("position");
   for (let i = 0; i < particleCount; i++) {
-    const ix = i * 3;
-    const theta = Math.atan2(pos.getY(i), pos.getX(i)) + 0.2 * time;
-    const phi = Math.acos(pos.getZ(i) / radius);
-    pos.setX(i, radius * Math.sin(phi) * Math.cos(theta));
-    pos.setY(i, radius * Math.sin(phi) * Math.sin(theta));
-    // Z stays the same for a simple orbit effect
+    // Jitter each particle slightly around its original surface position
+    const ox = originalPositions[i * 3];
+    const oy = originalPositions[i * 3 + 1];
+    const oz = originalPositions[i * 3 + 2];
+    pos.setX(i, ox + 0.08 * Math.sin(time * 2 + i));
+    pos.setY(i, oy + 0.08 * Math.cos(time * 2.2 + i));
+    pos.setZ(i, oz + 0.08 * Math.sin(time * 1.7 + i));
   }
   pos.needsUpdate = true;
 });

@@ -1,15 +1,42 @@
-// VFX preset: Fountain
-// Usage: import createFountainVFX from './vfx/fountain.js'
+// vfx/fountain.js
+
 import { ParticleSystem } from "../lib/particle-base.js";
 import * as THREE from "three";
 
-class FountainSystem extends ParticleSystem {
-  constructor(options) {
-    super(options);
+export class FountainSystem extends ParticleSystem {
+  constructor(props = {}) {
+    // Destructure with defaults
+    const {
+      position = [0, 0, 0],
+      height = 2.5,
+      color = 0x66ccff,
+      size = 0.09,
+      lifetime = 1.5,
+      velocity = new THREE.Vector3(0, height, 0),
+      particleCount = 100,
+    } = props;
+
+    // Pass common parameters into ParticleSystem constructor
+    super({
+      position,
+      velocity,
+      lifetime,
+      color,
+      size,
+      particleCount,
+      // Store height in props for reference if needed
+      height,
+    });
+
+    // Store fountain‐specific height
+    this.height = height;
+
+    // Initialize all particles
     this.initParticles();
   }
+
   spawnParticlePosition() {
-    // Spawn at base, with some horizontal spread
+    // Spawn at base of fountain, with some horizontal spread
     const angle = Math.random() * Math.PI * 2;
     const radius = Math.random() * 0.2;
     return new THREE.Vector3(
@@ -18,15 +45,4 @@ class FountainSystem extends ParticleSystem {
       this.position.z + Math.sin(angle) * radius
     );
   }
-}
-
-export default function createFountainVFX(position = new THREE.Vector3()) {
-  return new FountainSystem({
-    position,
-    color: 0x66ccff,
-    size: 0.09,
-    lifetime: 1.5,
-    velocity: new THREE.Vector3(0, 2.5, 0),
-    particleCount: 100,
-  });
 }

@@ -49,28 +49,39 @@
     }
   },
   "vfx": {
-    "position": [0, 0, 0],
     "slideSpacing": 2.5,
-    "systems": {
-      "firework": {
-        "position": [0, 1.2, 0]
+    "systems": [
+      {
+        "type": "explosion",
+        "name": "Large Explosion",
+        "properties": {
+          "position": [0, 1.0, 0],
+          "radius": 0.1,
+          "lifetime": 1.0,
+          "size": 0.1
+        }
       },
-      "explosion": {
-        "position": [0, 1.0, 0]
+      {
+        "type": "explosion",
+        "name": "Small Explosion",
+        "properties": {
+          "position": [0, 1.0, 0],
+          "radius": 0,
+          "lifetime": 0.5,
+          "size": 0.01
+        }
       },
-      "fountain": {
-        "position": [0, 0.5, 0]
-      },
-      "smoke": {
-        "position": [0, 0.8, 0]
-      },
-      "starburst": {
-        "position": [0, 1.0, 0]
-      },
-      "ringtrail": {
-        "position": [0, 0.7, 0]
+      {
+        "type": "smoke",
+        "name": "Smoke Cloud",
+        "properties": {
+          "position": [0, 1.0, 0],
+          "radius": 0.05,
+          "lifetime": 6,
+          "size": 0.2
+        }
       }
-    }
+    ]
   },
   "walls": {
     "wall1": {
@@ -112,8 +123,8 @@
     }
   ],
   "fog": {
-    "color": "#222233",
-    "near": 2,
-    "far": 4
+    "color": "#ffffff",
+    "near": 2.5,
+    "far": 6
   }
 }

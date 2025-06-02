@@ -1,20 +1,40 @@
+// vfx/ringtrail.js
+
 import { ParticleSystem } from "../lib/particle-base.js";
 import * as THREE from "three";
 
-class RingTrailSystem extends ParticleSystem {
-  constructor(options = {}) {
-    super({ ...options, particleCount: 10 });
-    this.trailLength = options.trailLength || 30;
-    // Each particle gets a trail (array of previous positions)
+export class RingTrailSystem extends ParticleSystem {
+  constructor(props = {}) {
+    // Destructure props with defaults
+    const {
+      position = [0, 0, 0],
+      color = 0xffffff,
+      size = 0.15,
+      trailLength = 30,
+      particleCount = 10,
+    } = props;
+
+    // Pass common parameters into ParticleSystem
+    super({
+      position,
+      color,
+      size,
+      particleCount,
+      // velocity and lifetime are unused here, so defaults in ParticleSystem apply
+    });
+
+    // Store ring-specific properties
+    this.trailLength = trailLength;
+
+    // Prepare per-particle trails
     this.trails = Array.from({ length: this.particleCount }, () => []);
-    // For rendering trails
     this.trailGeometry = Array.from(
       { length: this.particleCount },
       () => new THREE.BufferGeometry()
     );
     this.trailLines = Array.from({ length: this.particleCount }, (_, i) => {
       const mat = new THREE.LineBasicMaterial({
-        color: options.color || 0xffffff,
+        color,
         transparent: true,
         opacity: 0.5,
       });
@@ -22,11 +42,38 @@ class RingTrailSystem extends ParticleSystem {
       line.frustumCulled = false;
       return line;
     });
-    // Re-initialize particles with correct spawn logic
+
+    // Initialize particles now that everything is set up
     this.initParticles();
   }
 
-  // Override to accept index for ring placement
+  // Override initParticles to place each particle on the ring
+  initParticles() {
+    this.particles = [];
+    const positions = new Float32Array(this.particleCount * 3);
+
+    for (let i = 0; i < this.particleCount; i++) {
+      const pos = this.spawnParticlePosition(i);
+      positions[i * 3] = pos.x;
+      positions[i * 3 + 1] = pos.y;
+      positions[i * 3 + 2] = pos.z;
+
+      this.particles.push({
+        position: pos.clone(),
+        angle: (i / this.particleCount) * Math.PI * 2,
+        speed: 1.2,
+        age: 0,
+      });
+      this.trails[i] = [pos.clone()];
+    }
+
+    this.geometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(positions, 3)
+    );
+  }
+
+  // Compute initial position on a circle of radius 1.2
   spawnParticlePosition(i = 0) {
     const angle = (i / this.particleCount) * Math.PI * 2;
     const radius = 1.2;
@@ -37,45 +84,32 @@ class RingTrailSystem extends ParticleSystem {
     );
   }
 
-  initParticles() {
-    this.particles = [];
-    const positions = new Float32Array(this.particleCount * 3);
-    for (let i = 0; i < this.particleCount; i++) {
-      const pos = this.spawnParticlePosition(i);
-      positions[i * 3] = pos.x;
-      positions[i * 3 + 1] = pos.y;
-      positions[i * 3 + 2] = pos.z;
-      this.particles.push({
-        position: pos.clone(),
-        angle: (i / this.particleCount) * Math.PI * 2,
-        speed: 1.2,
-        age: 0,
-      });
-      this.trails[i] = [pos.clone()];
-    }
-    this.geometry.setAttribute(
-      "position",
-      new THREE.BufferAttribute(positions, 3)
-    );
-  }
-
   update(dt) {
     const positions = this.geometry.attributes.position.array;
+
     for (let i = 0; i < this.particleCount; i++) {
       const p = this.particles[i];
-      // Move particle along the ring
+
+      // Advance around the ring
       p.angle += p.speed * dt * 0.5;
       const radius = 1.2;
-      p.position.x = this.position.x + Math.cos(p.angle) * radius;
-      p.position.z = this.position.z + Math.sin(p.angle) * radius;
-      p.position.y = this.position.y;
-      // Update geometry
+      p.position.set(
+        this.position.x + Math.cos(p.angle) * radius,
+        this.position.y,
+        this.position.z + Math.sin(p.angle) * radius
+      );
+
+      // Update point positions
       positions[i * 3] = p.position.x;
       positions[i * 3 + 1] = p.position.y;
       positions[i * 3 + 2] = p.position.z;
-      // Update trail
+
+      // Record trail
       this.trails[i].push(p.position.clone());
-      if (this.trails[i].length > this.trailLength) this.trails[i].shift();
+      if (this.trails[i].length > this.trailLength) {
+        this.trails[i].shift();
+      }
+
       // Update trail geometry
       const trailPos = new Float32Array(this.trails[i].length * 3);
       for (let j = 0; j < this.trails[i].length; j++) {
@@ -90,25 +124,21 @@ class RingTrailSystem extends ParticleSystem {
       this.trailGeometry[i].setDrawRange(0, this.trails[i].length);
       this.trailGeometry[i].attributes.position.needsUpdate = true;
     }
+
     this.geometry.attributes.position.needsUpdate = true;
   }
 
   addToScene(scene) {
     scene.add(this.points);
-    for (const line of this.trailLines) scene.add(line);
+    for (const line of this.trailLines) {
+      scene.add(line);
+    }
   }
 
   removeFromScene(scene) {
     scene.remove(this.points);
-    for (const line of this.trailLines) scene.remove(line);
+    for (const line of this.trailLines) {
+      scene.remove(line);
+    }
   }
-}
-
-export default function createRingTrailVFX(position = new THREE.Vector3()) {
-  return new RingTrailSystem({
-    position,
-    color: 0xffffff,
-    size: 0.15,
-    trailLength: 30,
-  });
 }
